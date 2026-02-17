@@ -1,70 +1,138 @@
-# Getting Started with Create React App
+# React Redux Bank
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A small learning project that demonstrates Redux state management with React.
+The app models a simple bank workflow:
 
-## Available Scripts
+- Create a customer profile
+- Deposit and withdraw money
+- Request and pay back a loan
+- Convert non-USD deposits to USD via an async thunk
 
-In the project directory, you can run:
+## Tech Stack
 
-### `npm start`
+- React 19
+- Redux Toolkit
+- React Redux
+- Create React App
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## How The App Works
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+The UI flow is controlled by customer state:
 
-### `npm test`
+1. If no customer exists (`customer.fullName === ""`), the app shows the customer creation form.
+2. After creating a customer, the app shows `Customer`, `AccountOperations`, and `BalanceDisplay`.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Account state is stored in Redux and updated through slice reducers and thunk actions.
 
-### `npm run build`
+## State Shape
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### `account` slice
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```js
+{
+  balance: 0,
+  loan: 0,
+  loanPurpose: "",
+  isLoading: false
+}
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### `customer` slice
 
-### `npm run eject`
+```js
+{
+  fullName: "",
+  nationalID: "",
+  createdAt: ""
+}
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Key Redux Behavior
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Account actions (`src/features/accounts/accountSlice.js`)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- `deposit(amount, currency)`
+- If `currency === "USD"`, dispatches sync deposit.
+- If not USD, dispatches `account/convertingCurrency`, calls Frankfurter API, then dispatches converted USD amount.
+- `withdraw(amount)`
+- Decreases balance by amount.
+- `requestLoan(amount, purpose)`
+- Adds loan only when no existing loan is active.
+- `payLoan()`
+- Deducts current loan from balance, then clears loan data.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Customer actions (`src/features/customers/customerSlice.js`)
 
-## Learn More
+- `createCustomer(fullName, nationalID)`
+- Uses a prepared action payload that includes `createdAt` timestamp.
+- `updateName(fullName)`
+- Updates customer name.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Project Structure
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```text
+src/
+  App.js
+  index.js
+  store.js
+  features/
+    accounts/
+      accountSlice.js
+      AccountOperations.js
+      BalanceDisplay.js
+      accountSlice-v2.js
+    customers/
+      customerSlice.js
+      CreateCustomer.js
+      Customer.js
+      customerSlice-v2.js
+  store-v1.js
+  store-v2.js
+```
 
-### Code Splitting
+## Active vs Learning Files
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Active runtime files:
 
-### Analyzing the Bundle Size
+- `src/store.js`
+- `src/features/accounts/accountSlice.js`
+- `src/features/customers/customerSlice.js`
+- `src/App.js`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Learning/reference snapshots:
 
-### Making a Progressive Web App
+- `src/store-v1.js` (classic Redux example)
+- `src/store-v2.js` (Redux + thunk + devtools middleware setup)
+- `src/features/accounts/accountSlice-v2.js` (non-RTK reducer version)
+- `src/features/customers/customerSlice-v2.js` (non-RTK reducer version)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Setup
 
-### Advanced Configuration
+Install dependencies:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```bash
+npm install
+```
 
-### Deployment
+Run in development:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```bash
+npm start
+```
 
-### `npm run build` fails to minify
+Open `http://localhost:3000`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Scripts
+
+- `npm start` - Start development server
+- `npm test` - Run tests in watch mode
+- `npm run build` - Create production build
+- `npm run eject` - Eject CRA configuration (irreversible)
+
+## External API
+
+Currency conversion uses:
+
+- `https://api.frankfurter.app/latest`
+
+Used when depositing in `EUR` or `GBP`, converted into USD before balance update.
